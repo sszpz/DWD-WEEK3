@@ -1,12 +1,13 @@
 {
-  "name": "yuanyuanhw3",
+  "name": "dwd",
   "version": "1.0.0",
-  "description": "assignment homework3",
+  "description": "Dynamic Web Development HW 3",
   "main": "index.js",
   "scripts": {
+	"start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "yuanyuan wang",
+  "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.16.4"
