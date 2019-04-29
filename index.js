@@ -1,63 +1,58 @@
 var express = require('express');
 var mustacheExpress = require('mustache-express');
-var request = require('request');
-const bodyParser = require('body-parser'); //to handle post request
-var { Client } = require('pg');
+var {
+  Client
+} = require('pg');
 var connectionString = process.env.DATABASE_URL;
-//'postgres://vvccboedpnfrwz:d5112736a828712297b8e2d0043629df29fe74b590bd5b865198a70f7403b560@ec2-23-23-92-204.compute-1.amazonaws.com:5432/d2bt6ppaqap0hc';
 
-
-var app = express();
-var port = process.env.PORT || 8000;
 var client = new Client({
-    database: 'postgresql-solid-64083', //'posts-test'
     connectionString: connectionString,
     ssl: true,
 });
-var posts;
-var allPosts;
-var myText = 'this is a new line'
-var updatedPosts;
+var bodyParser = require('body-parser');
+var post_message = []
+var app = express()
 
+app.use(bodyParser.urlencoded({
+  extended: false
+}))
 
-app.use(bodyParser.urlencoded({ extended: true }));
-// next 3 lines set up mustache
 app.engine('html', mustacheExpress());
 app.set('view engine', 'html');
 app.set('views', __dirname);
 
-client.connect();
-
-app.get("/", function (req, res) {
-
-    client.query('SELECT * FROM posts', function (err, res0) {
-        if (err) {
-            console.log(err.stack);
-        }
-        allPosts = res0.rows;
-        console.log(allPosts);
-
-        res.render('forum', {
-            "postContent": allPosts,
-            "post": function () {
-                return this.message;
-            }
-        });
-    });
-    console.log('Forum Loaded');
-});
+client.connect()
 
 
-app.post('/update', function (req, res) {
-    var newPost = req.body.textarea;
-    console.log(newPost);
-    client.query("INSERT INTO posts (message) VALUES ('" + newPost + "')"), function (err, res) {
-        if (err) {
-            console.log(err.stack);
-        }
+// render the index page
+app.get('/', function(req, res) {
+
+  client.query('SELECT * FROM posts', (err, res2) => {
+    if (err) throw err;
+    for (var i = 0; i < res2.rows.length; i++) {
+      console.log(res2.rows[i].message);
+      post_message[i] = res2.rows[i].message + ' \r\n';
     }
+    res.render('forum', {
+      postContent: post_message
+    });
+  });
+console.log('Messages Loaded');
 
-    res.redirect('/');
-});
+})
 
-app.listen(port);
+
+
+app.post('/post', function(req, res) {
+  console.log(req.body.comment)
+  input = [req.body.comment]
+
+  client.query("INSERT INTO posts(message) VALUES($1)", input, (err, res) => {
+    if (err) throw err;
+  })
+  res.redirect('/')
+})
+
+app.listen(process.env.PORT || 8000, function() {
+  console.log('Started on port 8000')
+})
