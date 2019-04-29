@@ -1,79 +1,63 @@
-var express = require('express')
-var mustacheExpress = require('mustache-express')
-var bodyParser = require('body-parser')
-const {
-  Client
-} = require('pg')
-const path = require('path')
+var express = require('express');
+var mustacheExpress = require('mustache-express');
+var request = require('request');
+const bodyParser = require('body-parser'); //to handle post request
+var { Client } = require('pg');
+var connectionString = process.env.DATABASE_URL;
+//'postgres://vvccboedpnfrwz:d5112736a828712297b8e2d0043629df29fe74b590bd5b865198a70f7403b560@ec2-23-23-92-204.compute-1.amazonaws.com:5432/d2bt6ppaqap0hc';
 
-var port = process.env.PORT || 8000
-// console.log(process.env)
 
+var app = express();
+var port = process.env.PORT || 8000;
 var client = new Client({
-  connectionString: process.env.HEROKU_POSTGRESQL_PURPLE_URL || process.env.DATABASE_URL,
-  ssl: !!process.env.HEROKU_POSTGRESQL_PURPLE_URL
-})
-
-client.connect()
-// .then(() => console.log('connect'))
-// .catch(e => console.error('connection error', err.stack))
-
-
-var app = express()
-
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({
-  extended: true
-}))
-
-app.engine('html', mustacheExpress())
-app.set('view engine', 'html')
-app.set('views', __dirname)
+    database: 'postgresql-silhouetted-26173', //'posts-test'
+    connectionString: connectionString,
+    ssl: true,
+});
+var posts;
+var allPosts;
+var myText = 'this is a new line'
+var updatedPosts;
 
 
-// app.get('/all', function(req, res) {
-//   client.query(`SELECT * FROM posts`, (err, result) => {
-//     res.json(result)
-//     res.end()
-//   })
-// })
+app.use(bodyParser.urlencoded({ extended: true }));
+// next 3 lines set up mustache
+app.engine('html', mustacheExpress());
+app.set('view engine', 'html');
+app.set('views', __dirname);
 
-app.get('/', function(req, res) {
-  client.query(`SELECT * FROM posts`, (err, result) => {
-    // console.log(result)
-    // res.send('Your data is saved!')
-    if (err) throw err
-    for (let row of result.rows) {
-      console.log(JSON.stringify(row))
+client.connect();
+
+app.get("/", function (req, res) {
+
+    client.query('SELECT * FROM posts', function (err, res0) {
+        if (err) {
+            console.log(err.stack);
+        }
+        allPosts = res0.rows;
+        console.log(allPosts);
+
+        res.render('forum', {
+            "postContent": allPosts,
+            "post": function () {
+                return this.message;
+            }
+        });
+    });
+    console.log('Forum Loaded');
+});
+
+
+app.post('/update', function (req, res) {
+    var newPost = req.body.textarea;
+    console.log(newPost);
+    client.query("INSERT INTO posts (message) VALUES ('" + newPost + "')"), function (err, res) {
+        if (err) {
+            console.log(err.stack);
+        }
     }
-    let messagesArray = result.rows
-    res.render('index', {
-      messagesArray
-    })
-  })
-})
 
-app.post('/post', function(req, res) {
+    res.redirect('/');
+});
 
-  // const title = req.body.title
-  var intro = req.body.content
-  if (intro === undefined) {
-    res.sendFile(path.join(__dirname + 'index.html'))
-  } else {
-    client.query('INSERT INTO posts (message) VALUES ($1)', [intro], function(err, result) {
-      if (err) throw err
-      res.redirect('/')
-    })
-  }
-})
-
-// var sql = "INSERT INTO customers (Title, Introduction) VALUES" + "(" + title + "," + intro + ")"
-// client.query(sql, (err, result) => {
-//   if (err) throw err
-//   console.log(ressult)
-// })
-// })
-
-app.listen(port, function() {
-  console.log("Web Server Started at port 8000")
-})
+app.listen(port);
