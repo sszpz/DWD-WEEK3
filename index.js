@@ -10,7 +10,7 @@ var connectionString = process.env.DATABASE_URL;
 var app = express();
 var port = process.env.PORT || 8000;
 var client = new Client({
-    database: 'postgresql-silhouetted-26173', //'posts-test'
+    database: 'postgresql-solid-64083', //'posts-test'
     connectionString: connectionString,
     ssl: true,
 });
